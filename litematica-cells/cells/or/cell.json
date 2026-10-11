@@ -1,23 +1,13 @@
 {
-  "schema_version": 1,
   "id": "or_v1",
   "logical_type": "$_OR_",
   "kind": "combinational",
-  "status": "provisional",
   "schematic": {
     "file": "cell.litematic",
     "region": "OR",
     "dimensions": [7, 7, 5]
   },
   "orientation": {
-    "family": "v1_comb_canonical_x",
-    "coordinate_space": "cell_local",
-    "origin": {
-      "name": "bottom_left",
-      "position": [0, 0, 0]
-    },
-    "logic_flow": "+x",
-    "minecraft_axis_directions": [-1, 1, -1],
     "allowed_y_rotations": [0],
     "allow_mirror": false
   },

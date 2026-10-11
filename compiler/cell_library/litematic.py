@@ -34,10 +34,7 @@ class _NbtReader:
         self.stream = stream
 
     def _read(self, size: int) -> bytes:
-        data = self.stream.read(size)
-        if len(data) != size:
-            raise ValueError("truncated NBT payload")
-        return data
+        return self.stream.read(size)
 
     def _unpack(self, fmt: str) -> Any:
         size = struct.calcsize(">" + fmt)
@@ -48,8 +45,6 @@ class _NbtReader:
 
     def _array(self, fmt: str) -> list[Any]:
         length = self._unpack("i")
-        if length < 0:
-            raise ValueError(f"negative NBT array length: {length}")
         return [self._unpack(fmt) for _ in range(length)]
 
     def payload(self, tag: int) -> Any:
@@ -58,16 +53,12 @@ class _NbtReader:
             return self._unpack(scalar_formats[tag])
         if tag == 7:
             length = self._unpack("i")
-            if length < 0:
-                raise ValueError(f"negative NBT byte-array length: {length}")
             return self._read(length)
         if tag == 8:
             return self._string()
         if tag == 9:
             item_tag = self._unpack("b")
             length = self._unpack("i")
-            if length < 0:
-                raise ValueError(f"negative NBT list length: {length}")
             return [self.payload(item_tag) for _ in range(length)]
         if tag == 10:
             result: dict[str, Any] = {}
@@ -85,48 +76,30 @@ class _NbtReader:
 
     def root(self) -> dict[str, Any]:
         tag = self._unpack("b")
-        if tag != 10:
-            raise ValueError(f"expected compound NBT root, found tag {tag}")
         self._string()  # Root name is normally empty and is not semantically used.
         return self.payload(tag)
 
 
-def _vec3(value: Any, field: str) -> Vec3:
-    if not isinstance(value, dict):
-        raise ValueError(f"Litematica {field} is not a compound")
-    try:
-        coords = tuple(int(value[axis]) for axis in ("x", "y", "z"))
-    except (KeyError, TypeError, ValueError) as exc:
-        raise ValueError(f"invalid Litematica {field}") from exc
-    return coords  # type: ignore[return-value]
+def _vec3(value: dict[str, int]) -> Vec3:
+    return tuple(value[axis] for axis in ("x", "y", "z"))  # type: ignore[return-value]
 
 
 def read_litematic_summary(path: Path) -> LitematicSummary:
-    try:
-        with gzip.open(path, "rb") as stream:
-            root = _NbtReader(stream).root()
-    except (OSError, EOFError, struct.error, UnicodeDecodeError) as exc:
-        raise ValueError(f"cannot read Litematica file {path}: {exc}") from exc
+    with gzip.open(path, "rb") as stream:
+        root = _NbtReader(stream).root()
 
-    metadata = root.get("Metadata")
-    raw_regions = root.get("Regions")
-    if not isinstance(metadata, dict) or not isinstance(raw_regions, dict):
-        raise ValueError(f"Litematica file lacks Metadata or Regions: {path}")
-
-    regions: list[LitematicRegion] = []
-    for name, raw_region in raw_regions.items():
-        if not isinstance(raw_region, dict):
-            raise ValueError(f"invalid Litematica region {name!r}: {path}")
-        regions.append(
-            LitematicRegion(
-                name=name,
-                position=_vec3(raw_region.get("Position"), "region Position"),
-                signed_size=_vec3(raw_region.get("Size"), "region Size"),
-            )
+    metadata = root["Metadata"]
+    regions = tuple(
+        LitematicRegion(
+            name=name,
+            position=_vec3(region["Position"]),
+            signed_size=_vec3(region["Size"]),
         )
+        for name, region in root["Regions"].items()
+    )
 
     return LitematicSummary(
-        name=str(metadata.get("Name", "")),
-        minecraft_data_version=int(root.get("MinecraftDataVersion", 0)),
-        regions=tuple(regions),
+        name=metadata["Name"],
+        minecraft_data_version=root["MinecraftDataVersion"],
+        regions=regions,
     )

@@ -1,6 +1,13 @@
 """Physical Minecraft cell-library metadata and Litematica inspection."""
 
-from .model import CellLibrary, Orientation, PhysicalCell, Pin, Schematic
+from .model import (
+    CellLibrary,
+    Orientation,
+    PhysicalCell,
+    Pin,
+    RoutingBehavior,
+    Schematic,
+)
 from .parse import load_cell_library
 
 __all__ = [
@@ -8,6 +15,7 @@ __all__ = [
     "Orientation",
     "PhysicalCell",
     "Pin",
+    "RoutingBehavior",
     "Schematic",
     "load_cell_library",
 ]

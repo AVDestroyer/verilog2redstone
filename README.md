@@ -66,7 +66,7 @@ State cells are split at the register boundary for DAG analysis: `Q` is a source
 For our first version, we only support the following gates/cells
 
 - NAND
-- NOR
+- NOT
 - OR
 - Positive D-flip-flop
 

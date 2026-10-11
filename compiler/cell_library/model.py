@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional
 
 
 Vec3 = tuple[int, int, int]
 PinDirection = Literal["input", "output"]
+BufferTurn = Literal["straight", "left", "right"]
 
 
 @dataclass(frozen=True)
@@ -48,26 +49,28 @@ class Schematic:
 
 @dataclass(frozen=True)
 class Orientation:
-    family: str
-    coordinate_space: str
-    origin_name: str
     origin: Vec3
-    logic_flow: str
     minecraft_axis_directions: Vec3
     allowed_y_rotations: tuple[int, ...]
     allow_mirror: bool
 
 
 @dataclass(frozen=True)
+class RoutingBehavior:
+    turn: BufferTurn
+    input_heading: str
+    output_heading: str
+
+
+@dataclass(frozen=True)
 class PhysicalCell:
     cell_id: str
-    logical_type: str
+    logical_type: Optional[str]
     kind: str
-    status: str
-    metadata_path: Path
     schematic: Schematic
     orientation: Orientation
     pins: tuple[Pin, ...]
+    routing: Optional[RoutingBehavior] = None
 
     @property
     def inputs(self) -> tuple[Pin, ...]:
@@ -99,16 +102,27 @@ class PhysicalCell:
 class CellLibrary:
     root: Path
     schema_version: int
-    coordinate_space: str
     cells: tuple[PhysicalCell, ...]
     deferred_assets: tuple[Path, ...]
+    max_unbuffered_rail_distance: int
+    routing_objectives: tuple[str, ...]
+
+    @property
+    def logic_cells(self) -> tuple[PhysicalCell, ...]:
+        return tuple(cell for cell in self.cells if cell.kind == "combinational")
+
+    @property
+    def routing_cells(self) -> tuple[PhysicalCell, ...]:
+        return tuple(cell for cell in self.cells if cell.kind == "routing")
 
     def by_logical_type(self, logical_type: str) -> PhysicalCell:
-        matches = [cell for cell in self.cells if cell.logical_type == logical_type]
-        if not matches:
-            raise KeyError(f"no physical cell for logical type: {logical_type}")
-        if len(matches) > 1:
-            raise ValueError(
-                f"multiple physical cells for logical type: {logical_type}"
-            )
-        return matches[0]
+        return next(
+            cell for cell in self.logic_cells if cell.logical_type == logical_type
+        )
+
+    def buffer_for_turn(self, turn: BufferTurn) -> PhysicalCell:
+        return next(
+            cell
+            for cell in self.routing_cells
+            if cell.routing is not None and cell.routing.turn == turn
+        )

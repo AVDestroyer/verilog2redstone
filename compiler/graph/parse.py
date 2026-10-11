@@ -47,9 +47,7 @@ def parse_yosys_json(
     *,
     require_acyclic: bool = True,
 ) -> ModuleGraph:
-    modules = data.get("modules") or {}
-    if not modules:
-        raise ValueError("Yosys JSON has no modules")
+    modules = data["modules"]
 
     if module_name is None:
         # Prefer the module marked top; else first key.
@@ -60,9 +58,6 @@ def parse_yosys_json(
             if top in (1, "1") or (isinstance(top, str) and top.strip("0") != ""):
                 module_name = name
                 break
-
-    if module_name not in modules:
-        raise ValueError(f"module not found: {module_name}")
 
     graph = _build_module(module_name, modules[module_name])
     if require_acyclic:
@@ -119,13 +114,8 @@ def _build_module(name: str, mod: dict[str, Any]) -> ModuleGraph:
 
     # Cells.
     for cname, cinfo in (mod.get("cells") or {}).items():
-        ytype = cinfo.get("type")
-        if not ytype:
-            raise ValueError(f"cell {cname} has no type")
-        try:
-            kind = classify_cell(ytype)
-        except ValueError as exc:
-            raise ValueError(f"cell {cname}: {exc}") from exc
+        ytype = cinfo["type"]
+        kind = classify_cell(ytype)
         dirs = dict(cinfo.get("port_directions") or {})
         conns = dict(cinfo.get("connections") or {})
         if kind is CellKind.COMB:

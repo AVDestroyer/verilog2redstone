@@ -30,11 +30,23 @@ def main(argv: list[str] | None = None) -> int:
     for cell in library.cells:
         inputs = ", ".join(f"{pin.name}@{pin.position}" for pin in cell.inputs)
         outputs = ", ".join(f"{pin.name}@{pin.position}" for pin in cell.outputs)
+        label = cell.logical_type or cell.cell_id
+        routing = ""
+        if cell.routing is not None:
+            routing = (
+                f" turn={cell.routing.turn} "
+                f"heading={cell.routing.input_heading}->{cell.routing.output_heading}"
+            )
         print(
-            f"  {cell.logical_type}: {cell.schematic.dimensions} "
-            f"origin={cell.orientation.origin} inputs=[{inputs}] "
+            f"  {label}: {cell.schematic.dimensions} "
+            f"inputs=[{inputs}] "
             f"outputs=[{outputs}] region_size={cell.schematic.region_signed_size}"
+            f"{routing}"
         )
+    print(
+        f"  rail reach: {library.max_unbuffered_rail_distance} blocks; "
+        f"routing objectives: {', '.join(library.routing_objectives)}"
+    )
     if library.deferred_assets:
         print(f"  deferred assets: {len(library.deferred_assets)}")
     return 0

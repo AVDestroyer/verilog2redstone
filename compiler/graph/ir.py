@@ -9,7 +9,6 @@ reset attach as control edges and are not used for topological layering.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum, auto
 from typing import Any, Optional
 
 
@@ -20,14 +19,6 @@ class CombCycleError(ValueError):
         self.path = path
         rendered = " -> ".join(path)
         super().__init__(f"combinational data graph has a cycle: {rendered}")
-
-
-class NodeKind(Enum):
-    PRIMARY_INPUT = auto()
-    PRIMARY_OUTPUT = auto()
-    COMB_CELL = auto()
-    STATE_CELL = auto()
-    CONSTANT = auto()
 
 
 @dataclass(frozen=True)
@@ -115,19 +106,6 @@ class ModuleGraph:
     constants: dict[int, int] = field(default_factory=dict)  # synthetic net -> 0/1
     warnings: list[str] = field(default_factory=list)
 
-    def node_kind(self, name: str) -> NodeKind:
-        if any(p.name == name for p in self.primary_inputs):
-            return NodeKind.PRIMARY_INPUT
-        if any(p.name == name for p in self.primary_outputs):
-            return NodeKind.PRIMARY_OUTPUT
-        if any(c.name == name for c in self.comb_cells):
-            return NodeKind.COMB_CELL
-        if any(c.name == name for c in self.state_cells):
-            return NodeKind.STATE_CELL
-        if name.startswith("CONST_"):
-            return NodeKind.CONSTANT
-        raise KeyError(f"unknown node: {name}")
-
     def comb_node_id(self, ep: Endpoint) -> str:
         """Node id used for combinational DAG analysis.
 
@@ -159,10 +137,8 @@ class ModuleGraph:
             if n in visited:
                 return None
             if n in visiting:
-                if n in stack:
-                    i = stack.index(n)
-                    return stack[i:] + [n]
-                return [n, n]
+                i = stack.index(n)
+                return stack[i:] + [n]
             visiting.add(n)
             stack.append(n)
             for nxt in adj.get(n, ()):
@@ -198,10 +174,8 @@ class ModuleGraph:
 
         ready = sorted(n for n, d in indeg.items() if d == 0)
         layers: list[list[str]] = []
-        placed = 0
         while ready:
             layers.append(ready)
-            placed += len(ready)
             nxt: list[str] = []
             for n in ready:
                 for m in adj.get(n, ()):
@@ -210,8 +184,6 @@ class ModuleGraph:
                         nxt.append(m)
             ready = sorted(nxt)
 
-        if placed != len(indeg):
-            raise CombCycleError(self.find_comb_cycle() or ["<unknown>"])
         return layers
 
     def undriven_nets(self) -> list[int]:
@@ -235,10 +207,6 @@ class ModuleGraph:
                 "nets with sinks but no driver: "
                 + ", ".join(str(n) for n in undriven)
             )
-
-        for edge in self.control_edges:
-            if edge.role not in ("clock", "reset", "enable"):
-                raise ValueError(f"unknown control role: {edge.role}")
 
     def summary(self) -> str:
         lines = [
