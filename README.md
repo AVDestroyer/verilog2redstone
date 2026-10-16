@@ -71,3 +71,56 @@ For our first version, we only support the following gates/cells
 - Positive D-flip-flop
 
 More gates are coming in the future.
+
+## Placement API
+
+The initial fixed-orientation placer supports purely combinational graphs. It
+assigns graph cells to physical library cells and uses simulated annealing to
+search within a caller-supplied bounding box:
+
+```python
+from compiler.cell_library import load_cell_library
+from compiler.graph import parse_yosys_json_file
+from compiler.placement import AnnealingConfig, BoundingBox, place
+
+graph = parse_yosys_json_file("examples/build/adder4.json")
+library = load_cell_library("litematica-cells")
+result = place(
+    graph,
+    library,
+    BoundingBox(size=(80, 20, 40)),
+    AnnealingConfig(seed=123, trace_interval=100),
+)
+
+print(result.cost)
+for cell in result.placement.cells.values():
+    print(cell.graph_cell, cell.physical_cell.cell_id, cell.origin)
+```
+
+Primary I/O and constant endpoints are ignored until they have physical
+placements. The optional trace records sampled current and best costs for
+inspection or plotting.
+
+To run a reproducible placement smoke test and generate an SVG with top, side,
+and front views:
+
+```bash
+python3 scripts/place_mux2.py
+```
+
+The script writes `mux2.placement.svg` and `mux2.placement.json` under
+`examples/build/`.
+
+The larger combinational `adder4` example uses 30 physical cells and can be
+run in the same way:
+
+```bash
+python3 scripts/place_adder4.py
+```
+
+To compare random initialization against topological row initialization under
+the same annealing schedule and seed:
+
+```bash
+python3 scripts/compare_adder4_initializers.py
+```
