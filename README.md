@@ -17,6 +17,7 @@ Done so far:
 
 - [Yosys](https://yosyshq.net/yosys/) (tested with 0.33)
 - Python 3.10+ (stdlib only for the graph frontend)
+- [Litemapy](https://pypi.org/project/litemapy/) (placement export only)
 
 ## Quick start
 
@@ -124,3 +125,14 @@ the same annealing schedule and seed:
 ```bash
 python3 scripts/compare_adder4_initializers.py
 ```
+
+To combine the latest final topological placement into one Litematica
+schematic containing all gate blocks and block entities:
+
+```bash
+python3 -m pip install -r requirements.txt
+python3 scripts/export_adder4_litematic.py
+```
+
+The exporter writes `adder4.topological.placement.litematic` under
+`examples/build/`. Routing is not included yet.

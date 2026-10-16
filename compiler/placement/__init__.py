@@ -2,6 +2,7 @@
 
 from .anneal import CostFunction, place
 from .cost import directed_port_distance, placement_cost
+from .litematic import save_placement_litematic
 from .model import (
     AnnealingConfig,
     BoundingBox,
@@ -30,4 +31,5 @@ __all__ = [
     "placement_cost",
     "placement_result_to_dict",
     "render_placement_svg",
+    "save_placement_litematic",
 ]
