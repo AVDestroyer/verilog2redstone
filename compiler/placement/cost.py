@@ -47,6 +47,7 @@ def placement_cost(
         if (
             dx < dy
             or (dz > 0 and dx < 5)
+            or 0 < dz <= 8
             or (signed_dx < 0 and signed_dz <= 10)
         ):
             routing_constraint_count += 1

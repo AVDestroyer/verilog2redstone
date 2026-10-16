@@ -233,7 +233,7 @@ def _topological_initial_placement(
             or bool(cell_predecessors & current_row)
         )
         if starts_new_row:
-            row_x += row_width + 1
+            row_x += row_width + 5
             row_z = 0
             row_width = 0
             current_row = set()
@@ -248,7 +248,7 @@ def _topological_initial_placement(
         )
         current_row.add(graph_cell)
         row_width = max(row_width, dimensions[0])
-        row_z += dimensions[2] + 1
+        row_z += dimensions[2] + 10
 
     return Placement(cells=cells)
 

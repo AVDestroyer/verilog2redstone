@@ -48,7 +48,7 @@ def main() -> int:
 
     graph = parse_yosys_json_file(NETLIST_PATH)
     library = load_cell_library(REPOSITORY_ROOT / "litematica-cells")
-    bounds = BoundingBox(size=(120, 28, 60))
+    bounds = BoundingBox(size=(160, 28, 120))
     results: dict[str, PlacementResult] = {}
     elapsed_seconds: dict[str, float] = {}
 
@@ -59,7 +59,7 @@ def main() -> int:
             library,
             bounds,
             AnnealingConfig(
-                iterations_per_cell=2_000,
+                iterations_per_cell=5_000,
                 initialization=strategy,
                 seed=20261011,
                 trace_interval=500,
@@ -75,7 +75,7 @@ def main() -> int:
                 "module": graph.name,
                 "bounding_box": list(bounds.size),
                 "seed": 20261011,
-                "iterations_per_cell": 2_000,
+                "iterations_per_cell": 5_000,
                 "results": {
                     strategy: {
                         "elapsed_seconds": elapsed_seconds[strategy],
@@ -219,7 +219,7 @@ img {{ width: 100%; background: white; border: 1px solid #cbd5e1; }}
 </head>
 <body>
 <h1>adder4 initializer A/B comparison</h1>
-<p>Same 120 × 28 × 60 box, seed, 60,000 iterations, schedule, and move stream.</p>
+<p>Same 160 × 28 × 120 box, seed, 150,000 iterations, schedule, and move stream.</p>
 <table>
 <thead><tr><th rowspan="2">Initializer</th><th colspan="5">Initial</th><th colspan="5">Final</th><th rowspan="2">Accepted</th><th rowspan="2">Runtime</th></tr>
 <tr><th>Total</th><th>Wire</th><th>Routing</th><th>Overlap</th><th>Overflow</th><th>Total</th><th>Wire</th><th>Routing</th><th>Overlap</th><th>Overflow</th></tr></thead>
