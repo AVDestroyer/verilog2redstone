@@ -1,5 +1,3 @@
-"""End-to-end tests for synthesis and the sequential-aware graph IR."""
-
 from __future__ import annotations
 
 import subprocess

@@ -1,5 +1,3 @@
-"""Parse Yosys JSON into a sequential-aware ModuleGraph."""
-
 from __future__ import annotations
 
 import json
@@ -50,7 +48,6 @@ def parse_yosys_json(
     modules = data["modules"]
 
     if module_name is None:
-        # Prefer the module marked top; else first key.
         module_name = next(iter(modules))
         for name, mod in modules.items():
             attrs = mod.get("attributes") or {}
@@ -86,7 +83,6 @@ def _as_net_id(bit: Any) -> Optional[int]:
 def _build_module(name: str, mod: dict[str, Any]) -> ModuleGraph:
     g = ModuleGraph(name=name)
 
-    # Net display names (optional). Multi-bit nets get name[bit] labels.
     netnames = mod.get("netnames") or {}
     for nname, info in netnames.items():
         bits = info.get("bits") or []
@@ -98,7 +94,6 @@ def _build_module(name: str, mod: dict[str, Any]) -> ModuleGraph:
             if net.name is None:
                 net.name = label
 
-    # Primary ports.
     for pname, pinfo in (mod.get("ports") or {}).items():
         direction = pinfo.get("direction", "input")
         bits = list(pinfo.get("bits") or [])
@@ -112,7 +107,6 @@ def _build_module(name: str, mod: dict[str, Any]) -> ModuleGraph:
             g.primary_inputs.append(port)
             g.primary_outputs.append(port)
 
-    # Cells.
     for cname, cinfo in (mod.get("cells") or {}).items():
         ytype = cinfo["type"]
         kind = classify_cell(ytype)
@@ -140,7 +134,6 @@ def _build_module(name: str, mod: dict[str, Any]) -> ModuleGraph:
                 )
             )
 
-    # Build driver/sink maps, then emit typed edges.
     _register_endpoints(g)
     _emit_edges(g)
     return g
@@ -153,7 +146,6 @@ def _ensure_net(g: ModuleGraph, net_id: int) -> Net:
 
 
 def _register_endpoints(g: ModuleGraph) -> None:
-    # Primary inputs drive their nets; primary outputs sink theirs.
     for port in g.primary_inputs:
         for bit_i, bit in enumerate(port.bits):
             const = _bit_is_const(bit)
@@ -186,7 +178,6 @@ def _register_endpoints(g: ModuleGraph) -> None:
             for bit_i, bit in enumerate(bits):
                 const = _bit_is_const(bit)
                 if const is not None:
-                    # Input tied to const: invent a constant driver net later.
                     if direction == "input":
                         synth = _const_net(g, const)
                         ep = Endpoint(node=cell.name, port=pname, bit=bit_i)
@@ -232,8 +223,6 @@ def _register_endpoints(g: ModuleGraph) -> None:
                 ep = Endpoint(node=cell.name, port=pname, bit=bit_i)
                 net = _ensure_net(g, net_id)
 
-                # Data Q drives comb; data D sinks from comb.
-                # Control pins are sinks for control edges (recorded separately).
                 if pname == data_out:
                     net.drivers.append(ep)
                 elif pname == data_in:
@@ -243,7 +232,6 @@ def _register_endpoints(g: ModuleGraph) -> None:
                 elif direction == "output":
                     net.drivers.append(ep)
                 else:
-                    # Unknown state input: treat as data sink for now.
                     net.sinks.append(ep)
                     g.warnings.append(
                         f"state cell port treated as data sink: {cell.name}.{pname}"
@@ -251,13 +239,10 @@ def _register_endpoints(g: ModuleGraph) -> None:
 
 
 def _const_net(g: ModuleGraph, value: int) -> int:
-    """Allocate a synthetic net driven by CONST_0 / CONST_1."""
-    # Prefer Yosys convention: net 0/1 are constants, but we also invent drivers.
-    # Use negative ids for synthetic const nets to avoid colliding with Yosys ids.
     for existing, v in g.constants.items():
         if v == value:
             return existing
-    synth_id = -(value + 1)  # 0 -> -1, 1 -> -2
+    synth_id = -(value + 1)
     g.constants[synth_id] = value
     node = f"CONST_{value}"
     net = _ensure_net(g, synth_id)
@@ -297,11 +282,7 @@ def _emit_edges(g: ModuleGraph) -> None:
                     )
                     continue
 
-                # Do not create a data edge that closes D->Q through the same
-                # state cell; Q and D are already separate endpoints.
-                # (A driver on Q and sink on D of the same cell is fine and
-                # expected for feedback *through comb* — those edges go
-                # Q->comb and comb->D, never Q->D inside one cell.)
+                # State boundaries must not introduce internal Q-to-D edges.
                 if (
                     driver.node == sink.node
                     and driver.node in state_by_name

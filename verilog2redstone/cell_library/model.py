@@ -1,5 +1,3 @@
-"""Typed physical-cell metadata used after logical technology mapping."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

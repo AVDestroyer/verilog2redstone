@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-"""Synthesize and place the combinational adder4 example."""
-
 from __future__ import annotations
 
 import json

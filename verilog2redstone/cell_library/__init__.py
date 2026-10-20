@@ -1,5 +1,3 @@
-"""Physical Minecraft cell-library metadata and Litematica inspection."""
-
 from .model import (
     CellLibrary,
     Orientation,

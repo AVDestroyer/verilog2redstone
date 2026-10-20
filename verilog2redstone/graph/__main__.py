@@ -1,5 +1,3 @@
-"""CLI: parse a Yosys JSON netlist into the sequential-aware graph IR."""
-
 from __future__ import annotations
 
 import argparse

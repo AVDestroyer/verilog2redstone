@@ -1,5 +1,3 @@
-"""Small end-to-end correctness test for combinational placement."""
-
 from __future__ import annotations
 
 from pathlib import Path

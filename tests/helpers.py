@@ -1,5 +1,3 @@
-"""Helpers for synthesizing examples during tests."""
-
 from __future__ import annotations
 
 import subprocess
@@ -12,7 +10,6 @@ BUILD = EXAMPLES / "build"
 
 
 def synth(verilog_name: str, top: str | None = None) -> Path:
-    """Run scripts/synth.sh and return the output JSON path."""
     verilog = EXAMPLES / verilog_name
     if not verilog.is_file():
         raise FileNotFoundError(verilog)

@@ -1,17 +1,5 @@
-# Verilog -> Yosys JSON netlist
-#
 # Lower RTL, reduce state to positive-edge registers, and map combinational
 # logic to the Minecraft target gate set before writing JSON.
-#
-# Placeholders are substituted by scripts/synth.sh:
-#   @VERILOG_FILE@
-#   @TOP_MODULE_DIRECTIVE@   (empty, or " -top <module>")
-#   @OUTPUT_JSON@
-#
-# Manual use:
-#   1. Replace the placeholders below with real paths/names, or
-#   2. Prefer: ./scripts/synth.sh <verilog> [top_module] [output.json]
-#      (defaults to examples/build/<verilog_basename>.json)
 
 read_verilog -sv @VERILOG_FILE@
 hierarchy -check@TOP_MODULE_DIRECTIVE@

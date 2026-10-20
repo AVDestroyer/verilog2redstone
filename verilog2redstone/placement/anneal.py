@@ -1,5 +1,3 @@
-"""Simulated annealing placer for fixed-orientation physical cells."""
-
 from __future__ import annotations
 
 import math
@@ -25,8 +23,6 @@ from .model import (
 
 
 class CostFunction(Protocol):
-    """Callable cost model accepted by :func:`place`."""
-
     def __call__(
         self,
         graph: ModuleGraph,

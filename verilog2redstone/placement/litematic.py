@@ -1,5 +1,3 @@
-"""Export placed physical cells to a combined Litematica schematic."""
-
 from __future__ import annotations
 
 from copy import deepcopy
@@ -69,8 +67,6 @@ def save_placement_litematic(
         )
     litematic_version, litematic_subversion, minecraft_version = versions.pop()
 
-    # A selection corner at the canonical origin and negative X/Z sizes maps
-    # canonical coordinates directly without rotating or mirroring cell data.
     output_region = Region(
         0,
         0,

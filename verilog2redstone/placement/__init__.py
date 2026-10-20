@@ -1,5 +1,3 @@
-"""Simulated annealing placement API."""
-
 from .anneal import CostFunction, place
 from .cost import directed_port_distance, placement_cost
 from .litematic import save_placement_litematic

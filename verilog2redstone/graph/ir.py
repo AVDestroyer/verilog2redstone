@@ -1,9 +1,8 @@
 """Sequential-aware graph IR.
 
-The combinational subgraph (data edges between comb cells / state Q/D / primary
-ports) must be a DAG. Feedback through registers is expressed by state cells:
-Q is a data source into comb logic, D is a data sink from comb logic. Clock and
-reset attach as control edges and are not used for topological layering.
+Combinational subgraphs must be a DAG. State cells are divided into D and Q:
+D is a sink and Q is a source. Clock and reset are control edges, so they are
+not part of the topological ordering.
 """
 
 from __future__ import annotations
@@ -13,8 +12,6 @@ from typing import Any, Optional
 
 
 class CombCycleError(ValueError):
-    """Raised when the combinational data graph contains a cycle."""
-
     def __init__(self, path: list[str]):
         self.path = path
         rendered = " -> ".join(path)
@@ -23,8 +20,6 @@ class CombCycleError(ValueError):
 
 @dataclass(frozen=True)
 class Endpoint:
-    """A pin on a graph node."""
-
     node: str
     port: str
     bit: int = 0
@@ -38,8 +33,6 @@ class Endpoint:
 
 @dataclass(frozen=True)
 class DataEdge:
-    """Combinational / observed value connection (driver -> sink)."""
-
     net_id: int
     src: Endpoint
     dst: Endpoint
@@ -47,8 +40,6 @@ class DataEdge:
 
 @dataclass(frozen=True)
 class ControlEdge:
-    """Clock / reset / enable attachment (driver -> state control pin)."""
-
     net_id: int
     src: Endpoint
     dst: Endpoint
@@ -117,7 +108,6 @@ class ModuleGraph:
         return ep.node
 
     def comb_successors(self) -> dict[str, set[str]]:
-        """Adjacency for topological layering of the combinational DAG."""
         adj: dict[str, set[str]] = {}
         for edge in self.data_edges:
             src = self.comb_node_id(edge.src)
@@ -127,7 +117,6 @@ class ModuleGraph:
         return adj
 
     def find_comb_cycle(self) -> Optional[list[str]]:
-        """Return one combinational cycle path, or None if acyclic."""
         adj = self.comb_successors()
         visiting: set[str] = set()
         visited: set[str] = set()
@@ -187,15 +176,11 @@ class ModuleGraph:
         return layers
 
     def undriven_nets(self) -> list[int]:
-        """Nets that have sinks but no driver."""
         return sorted(
-            net_id
-            for net_id, net in self.nets.items()
-            if net.sinks and not net.drivers
+            net_id for net_id, net in self.nets.items() if net.sinks and not net.drivers
         )
 
     def validate(self, *, require_acyclic: bool = True) -> None:
-        """Raise if the graph violates IR invariants we rely on later."""
         if require_acyclic:
             cycle = self.find_comb_cycle()
             if cycle is not None:
@@ -204,8 +189,7 @@ class ModuleGraph:
         undriven = self.undriven_nets()
         if undriven:
             raise ValueError(
-                "nets with sinks but no driver: "
-                + ", ".join(str(n) for n in undriven)
+                "nets with sinks but no driver: " + ", ".join(str(n) for n in undriven)
             )
 
     def summary(self) -> str:
@@ -213,13 +197,11 @@ class ModuleGraph:
             f"module {self.name}",
             f"  primary_inputs:  {[p.name for p in self.primary_inputs]}",
             f"  primary_outputs: {[p.name for p in self.primary_outputs]}",
-            f"  comb_cells:      {[f'{c.name}:{c.yosys_type}' for c in self.comb_cells]}",
+            "  comb_cells:      "
+            + str([f"{c.name}:{c.yosys_type}" for c in self.comb_cells]),
             "  state_cells:     "
             + str(
-                [
-                    f"{c.name}:{c.logical_type}({c.yosys_type})"
-                    for c in self.state_cells
-                ]
+                [f"{c.name}:{c.logical_type}({c.yosys_type})" for c in self.state_cells]
             ),
             f"  data_edges ({len(self.data_edges)}):",
         ]

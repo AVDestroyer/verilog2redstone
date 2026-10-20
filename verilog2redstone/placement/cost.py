@@ -1,5 +1,3 @@
-"""Default cost function for combinational cell placement."""
-
 from __future__ import annotations
 
 from verilog2redstone.graph import ModuleGraph
@@ -108,7 +106,6 @@ def _violates_clearance(first: PlacedCell, second: PlacedCell) -> bool:
         second_min = second.origin[axis]
         second_max = second_min + second.physical_cell.schematic.dimensions[axis] - 1
 
-        # One integer coordinate must remain empty between the occupied ranges.
         if first_max + 1 < second_min or second_max + 1 < first_min:
             return False
     return True

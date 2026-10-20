@@ -1,5 +1,3 @@
-"""Serialization helpers for placement results."""
-
 from __future__ import annotations
 
 from .model import CostBreakdown, Placement, PlacementResult
@@ -9,8 +7,6 @@ def placement_result_to_dict(
     module_name: str,
     result: PlacementResult,
 ) -> dict[str, object]:
-    """Convert a placement result, including its trace, to JSON-safe data."""
-
     display_labels = {
         graph_cell: f"C{index}"
         for index, graph_cell in enumerate(

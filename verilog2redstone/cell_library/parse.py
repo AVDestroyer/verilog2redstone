@@ -1,5 +1,3 @@
-"""Load the repository-owned physical cell library."""
-
 from __future__ import annotations
 
 import json

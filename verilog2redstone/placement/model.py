@@ -1,5 +1,3 @@
-"""Data model and configuration for physical cell placement."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -12,8 +10,6 @@ Vec3 = tuple[int, int, int]
 
 @dataclass(frozen=True)
 class BoundingBox:
-    """Axis-aligned placement volume."""
-
     size: Vec3
     origin: Vec3 = (0, 0, 0)
 
@@ -32,8 +28,6 @@ class BoundingBox:
 
 @dataclass(frozen=True)
 class PlacedCell:
-    """A graph cell assigned to a physical cell and design-space origin."""
-
     graph_cell: str
     physical_cell: PhysicalCell
     origin: Vec3
@@ -41,8 +35,6 @@ class PlacedCell:
 
 @dataclass(frozen=True)
 class Placement:
-    """Physical assignments indexed by graph cell name."""
-
     cells: Mapping[str, PlacedCell]
 
 
@@ -69,8 +61,6 @@ def placement_bounding_box(placement: Placement) -> BoundingBox:
 
 @dataclass(frozen=True)
 class CostBreakdown:
-    """Independently tunable components of placement cost."""
-
     wire: float = 0.0
     routing_constraint: float = 0.0
     overlap: float = 0.0
@@ -90,8 +80,6 @@ class CostBreakdown:
 
 @dataclass(frozen=True)
 class TraceEntry:
-    """A sampled point in an annealing run."""
-
     iteration: int
     temperature: float
     current_cost: CostBreakdown
@@ -102,8 +90,6 @@ class TraceEntry:
 
 @dataclass(frozen=True)
 class AnnealingConfig:
-    """Simulated annealing schedule and move configuration."""
-
     iterations_per_cell: int = 5_000
     initial_temperature: float = 100.0
     final_temperature: float = 0.1
@@ -141,8 +127,6 @@ class AnnealingConfig:
 
 @dataclass(frozen=True)
 class PlacementResult:
-    """Best placement found and diagnostic information about the run."""
-
     placement: Placement
     bounding_box: BoundingBox
     initial_placement: Placement

@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-"""Export the latest adder4 placement to Litematica."""
-
 from __future__ import annotations
 
 import json

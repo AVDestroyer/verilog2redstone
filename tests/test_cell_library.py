@@ -1,5 +1,3 @@
-"""Behavioral contracts for the physical cell library."""
-
 from __future__ import annotations
 
 from pathlib import Path
