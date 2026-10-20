@@ -1,6 +1,7 @@
 {
   "id": "buf_left_v1",
   "kind": "routing",
+  "output_signal_strength": 6,
   "schematic": {
     "file": "cell.litematic",
     "region": "BUF_LEFT",

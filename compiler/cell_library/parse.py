@@ -73,6 +73,7 @@ def _load_cell(
         cell_id=data["id"],
         logical_type=logical_type,
         kind=kind,
+        output_signal_strength=data["output_signal_strength"],
         schematic=Schematic(
             path=schematic_path,
             region=region_name,

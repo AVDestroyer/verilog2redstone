@@ -1,10 +1,11 @@
 {
   "id": "buf_v1",
   "kind": "routing",
+  "output_signal_strength": 8,
   "schematic": {
     "file": "cell.litematic",
     "region": "BUF",
-    "dimensions": [5, 4, 5]
+    "dimensions": [4, 4, 5]
   },
   "orientation": {
     "allowed_y_rotations": [0, 90, 180, 270],
@@ -24,7 +25,7 @@
     {
       "name": "Y",
       "direction": "output",
-      "position": [4, 1, 2]
+      "position": [3, 1, 2]
     }
   ]
 }

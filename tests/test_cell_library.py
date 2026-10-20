@@ -32,10 +32,10 @@ class TestCellLibrary(unittest.TestCase):
 
     def test_reported_pin_coordinates(self) -> None:
         expected = {
-            "$_NOT_": ([(0, 1, 0)], [(4, 1, 0)]),
-            "$_OR_": ([(0, 1, 2), (0, 4, 1)], [(6, 1, 2)]),
-            "$_NAND_": ([(0, 2, 1), (5, 5, 1)], [(12, 1, 1)]),
-            "straight": ([(0, 1, 1)], [(4, 1, 2)]),
+            "$_NOT_": ([(0, 1, 0)], [(3, 2, 0)]),
+            "$_OR_": ([(0, 1, 2), (0, 4, 1)], [(3, 4, 2)]),
+            "$_NAND_": ([(0, 2, 1), (5, 5, 1)], [(8, 5, 1)]),
+            "straight": ([(0, 1, 1)], [(3, 1, 2)]),
             "left": ([(0, 1, 3)], [(3, 1, 0)]),
             "right": ([(0, 1, 1)], [(3, 1, 4)]),
         }
@@ -44,6 +44,19 @@ class TestCellLibrary(unittest.TestCase):
             inputs, outputs = expected[key]
             self.assertEqual([pin.position for pin in cell.inputs], inputs)
             self.assertEqual([pin.position for pin in cell.outputs], outputs)
+
+    def test_output_signal_strengths(self) -> None:
+        expected = {
+            "$_NOT_": 8,
+            "$_OR_": 6,
+            "$_NAND_": 5,
+            "straight": 8,
+            "left": 6,
+            "right": 6,
+        }
+        for cell in self.library.cells:
+            key = cell.logical_type or cell.routing.turn  # type: ignore[union-attr]
+            self.assertEqual(cell.output_signal_strength, expected[key])
 
     def test_cell_coordinates_map_to_minecraft_axes(self) -> None:
         expected_steps = {

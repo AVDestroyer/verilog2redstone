@@ -67,6 +67,7 @@ class PhysicalCell:
     cell_id: str
     logical_type: Optional[str]
     kind: str
+    output_signal_strength: int
     schematic: Schematic
     orientation: Orientation
     pins: tuple[Pin, ...]

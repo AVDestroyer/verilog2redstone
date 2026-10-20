@@ -40,7 +40,8 @@ def main(argv: list[str] | None = None) -> int:
         print(
             f"  {label}: {cell.schematic.dimensions} "
             f"inputs=[{inputs}] "
-            f"outputs=[{outputs}] region_size={cell.schematic.region_signed_size}"
+            f"outputs=[{outputs}] output_strength={cell.output_signal_strength} "
+            f"region_size={cell.schematic.region_signed_size}"
             f"{routing}"
         )
     print(
