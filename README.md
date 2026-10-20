@@ -57,10 +57,10 @@ python3 -m pip install -r requirements.txt
 ./scripts/synth.sh examples/minimal_toggle.v minimal_toggle
 
 # Yosys JSON → graph summary
-python3 -m compiler.graph examples/build/minimal_toggle.json
+python3 -m verilog2redstone.graph examples/build/minimal_toggle.json
 
 # Dump the graph as JSON
-python3 -m compiler.graph examples/build/minimal_toggle.json \
+python3 -m verilog2redstone.graph examples/build/minimal_toggle.json \
   --json-out examples/build/minimal_toggle.graph.json
 
 # Run the placement example
@@ -108,9 +108,9 @@ assigns graph cells to physical library cells and uses simulated annealing to
 try to optimize the design according to a few cost objectives.
 
 ```python
-from compiler.cell_library import load_cell_library
-from compiler.graph import parse_yosys_json_file
-from compiler.placement import (
+from verilog2redstone.cell_library import load_cell_library
+from verilog2redstone.graph import parse_yosys_json_file
+from verilog2redstone.placement import (
     AnnealingConfig,
     BoundingBox,
     place,

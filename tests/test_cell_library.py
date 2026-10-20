@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 import unittest
 
-from compiler.cell_library import load_cell_library
-from compiler.graph.cells import COMB_CELLS
+from verilog2redstone.cell_library import load_cell_library
+from verilog2redstone.graph.cells import COMB_CELLS
 
 
 LIBRARY_ROOT = Path(__file__).resolve().parents[1] / "litematica-cells"

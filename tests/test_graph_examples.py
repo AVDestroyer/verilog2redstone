@@ -5,8 +5,8 @@ from __future__ import annotations
 import subprocess
 import unittest
 
-from compiler.graph import CombCycleError, parse_yosys_json_file
-from compiler.graph.cells import COMB_CELLS, REGISTER_YOSYS_TYPE
+from verilog2redstone.graph import CombCycleError, parse_yosys_json_file
+from verilog2redstone.graph.cells import COMB_CELLS, REGISTER_YOSYS_TYPE
 from tests.helpers import synth
 
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Synthesize, place, and visualize the combinational adder4 example."""
+"""Synthesize and place the combinational adder4 example."""
 
 from __future__ import annotations
 
@@ -12,21 +12,19 @@ import sys
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPOSITORY_ROOT))
 
-from compiler.cell_library import load_cell_library  # noqa: E402
-from compiler.graph import parse_yosys_json_file  # noqa: E402
-from compiler.placement import (  # noqa: E402
+from verilog2redstone.cell_library import load_cell_library  # noqa: E402
+from verilog2redstone.graph import parse_yosys_json_file  # noqa: E402
+from verilog2redstone.placement import (  # noqa: E402
     AnnealingConfig,
     BoundingBox,
     place,
     placement_result_to_dict,
-    render_placement_svg,
 )
 
 
 BUILD_DIRECTORY = REPOSITORY_ROOT / "examples" / "build"
 NETLIST_PATH = BUILD_DIRECTORY / "adder4.json"
 PLACEMENT_JSON_PATH = BUILD_DIRECTORY / "adder4.placement.json"
-PLACEMENT_SVG_PATH = BUILD_DIRECTORY / "adder4.placement.svg"
 
 
 def main() -> int:
@@ -75,20 +73,9 @@ def main() -> int:
         + "\n",
         encoding="utf-8",
     )
-    PLACEMENT_SVG_PATH.write_text(
-        render_placement_svg(
-            graph,
-            result.placement,
-            result.bounding_box,
-            cost=result.cost,
-            title="adder4 simulated-annealing placement",
-        ),
-        encoding="utf-8",
-    )
     print(f"Placed {len(result.placement.cells)} cells")
     print(f"Cost: {result.cost.total:g} ({result.cost})")
     print(f"JSON: {PLACEMENT_JSON_PATH}")
-    print(f"SVG:  {PLACEMENT_SVG_PATH}")
     return 0
 
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Mapping, Optional
 
-from compiler.cell_library import PhysicalCell
+from verilog2redstone.cell_library import PhysicalCell
 
 Vec3 = tuple[int, int, int]
 

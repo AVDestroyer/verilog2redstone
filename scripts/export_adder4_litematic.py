@@ -11,8 +11,8 @@ import sys
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPOSITORY_ROOT))
 
-from compiler.cell_library import load_cell_library  # noqa: E402
-from compiler.placement import (  # noqa: E402
+from verilog2redstone.cell_library import load_cell_library  # noqa: E402
+from verilog2redstone.placement import (  # noqa: E402
     PlacedCell,
     Placement,
     save_placement_litematic,

@@ -8,8 +8,8 @@ from collections import deque
 from dataclasses import replace
 from typing import Protocol
 
-from compiler.cell_library import CellLibrary, PhysicalCell
-from compiler.graph import CombCell, ModuleGraph
+from verilog2redstone.cell_library import CellLibrary, PhysicalCell
+from verilog2redstone.graph import CombCell, ModuleGraph
 
 from .cost import placement_cost
 from .model import (

@@ -5,9 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 import unittest
 
-from compiler.cell_library import load_cell_library
-from compiler.graph import parse_yosys_json_file
-from compiler.placement import (
+from verilog2redstone.cell_library import load_cell_library
+from verilog2redstone.graph import parse_yosys_json_file
+from verilog2redstone.placement import (
     AnnealingConfig,
     BoundingBox,
     place,

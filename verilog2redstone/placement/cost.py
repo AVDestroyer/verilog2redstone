@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from compiler.graph import ModuleGraph
+from verilog2redstone.graph import ModuleGraph
 
 from .model import BoundingBox, CostBreakdown, PlacedCell, Placement, Vec3
 
