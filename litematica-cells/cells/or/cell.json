@@ -16,12 +16,14 @@
     {
       "name": "A",
       "direction": "input",
-      "position": [0, 1, 2]
+      "position": [0, 1, 2],
+      "signal_strength_required": 4
     },
     {
       "name": "B",
       "direction": "input",
-      "position": [0, 4, 1]
+      "position": [0, 4, 1],
+      "signal_strength_required": 2
     },
     {
       "name": "Y",
