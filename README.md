@@ -77,9 +77,8 @@ More gates are coming in the future.
 
 The initial fixed-orientation placer supports purely combinational graphs. It
 assigns graph cells to physical library cells and uses simulated annealing to
-search within a caller-supplied bounding box. Initialization follows the
-combinational graph's topological order. Moves that put a destination input
-behind its source output in X are rejected as illegal:
+search within a caller-supplied bounding box. A destination input behind its
+source output in X contributes a routing-constraint penalty:
 
 ```python
 from compiler.cell_library import load_cell_library
@@ -102,7 +101,8 @@ for cell in result.placement.cells.values():
 
 Primary I/O and constant endpoints are ignored until they have physical
 placements. The optional trace records sampled current and best costs for
-inspection or plotting.
+inspection or plotting. `AnnealingConfig.z_span_weight_per_cell` controls the
+occupied Z-depth penalty per cell and defaults to `1.0`.
 
 To run a reproducible placement smoke test and generate an SVG with top, side,
 and front views:
@@ -121,19 +121,16 @@ run in the same way:
 python3 scripts/place_adder4.py
 ```
 
-To generate a detailed report for the topological placement:
+The script also writes `adder4.placement.html`, which displays the placement
+and its final cost breakdown.
 
-```bash
-python3 scripts/compare_adder4_initializers.py
-```
-
-To combine the latest final topological placement into one Litematica
-schematic containing all gate blocks and block entities:
+To combine the latest placement into one Litematica schematic containing all
+gate blocks and block entities:
 
 ```bash
 python3 -m pip install -r requirements.txt
 python3 scripts/export_adder4_litematic.py
 ```
 
-The exporter writes `adder4.topological.placement.litematic` under
+The exporter writes `adder4.placement.litematic` under
 `examples/build/`. Routing is not included yet.

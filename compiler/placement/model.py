@@ -3,20 +3,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Literal, Mapping, Optional
+from typing import Mapping, Optional
 
 from compiler.cell_library import PhysicalCell
 
-
 Vec3 = tuple[int, int, int]
-InitializationStrategy = Literal["topological"]
 
 
 @dataclass(frozen=True)
 class BoundingBox:
-    """Placement volume with an implicit minimum corner at (0, 0, 0)."""
+    """Axis-aligned placement volume."""
 
     size: Vec3
+    origin: Vec3 = (0, 0, 0)
 
     def __post_init__(self) -> None:
         if len(self.size) != 3 or any(
@@ -24,6 +23,11 @@ class BoundingBox:
             for value in self.size
         ):
             raise ValueError("bounding box size must contain three positive integers")
+        if len(self.origin) != 3 or any(
+            not isinstance(value, int) or isinstance(value, bool)
+            for value in self.origin
+        ):
+            raise ValueError("bounding box origin must contain three integers")
 
 
 @dataclass(frozen=True)
@@ -42,6 +46,27 @@ class Placement:
     cells: Mapping[str, PlacedCell]
 
 
+def placement_bounding_box(placement: Placement) -> BoundingBox:
+    """Return the smallest axis-aligned box containing every placed cell."""
+
+    if not placement.cells:
+        raise ValueError("cannot calculate a bounding box for an empty placement")
+    minimum = tuple(
+        min(cell.origin[axis] for cell in placement.cells.values()) for axis in range(3)
+    )
+    maximum = tuple(
+        max(
+            cell.origin[axis] + cell.physical_cell.schematic.dimensions[axis]
+            for cell in placement.cells.values()
+        )
+        for axis in range(3)
+    )
+    return BoundingBox(
+        size=tuple(maximum[axis] - minimum[axis] for axis in range(3)),
+        origin=minimum,
+    )
+
+
 @dataclass(frozen=True)
 class CostBreakdown:
     """Independently tunable components of placement cost."""
@@ -50,6 +75,7 @@ class CostBreakdown:
     routing_constraint: float = 0.0
     overlap: float = 0.0
     overflow: float = 0.0
+    z_span: float = 0.0
 
     @property
     def total(self) -> float:
@@ -58,6 +84,7 @@ class CostBreakdown:
             + self.routing_constraint
             + self.overlap
             + self.overflow
+            + self.z_span
         )
 
 
@@ -84,7 +111,7 @@ class AnnealingConfig:
     swap_weight: float = 0.2
     max_displacement_fraction: float = 0.25
     invalid_penalty: float = 100_000.0
-    initialization: InitializationStrategy = "topological"
+    z_span_weight_per_cell: float = 2.0
     seed: Optional[int] = None
     trace_interval: Optional[int] = None
 
@@ -106,8 +133,8 @@ class AnnealingConfig:
             raise ValueError("max_displacement_fraction must be positive")
         if self.invalid_penalty < 0:
             raise ValueError("invalid_penalty cannot be negative")
-        if self.initialization != "topological":
-            raise ValueError("initialization must be 'topological'")
+        if self.z_span_weight_per_cell < 0:
+            raise ValueError("z_span_weight_per_cell cannot be negative")
         if self.trace_interval is not None and self.trace_interval <= 0:
             raise ValueError("trace_interval must be positive when provided")
 
@@ -117,11 +144,11 @@ class PlacementResult:
     """Best placement found and diagnostic information about the run."""
 
     placement: Placement
+    bounding_box: BoundingBox
     initial_placement: Placement
     cost: CostBreakdown
     initial_cost: CostBreakdown
     iterations: int
     accepted_moves: int
     seed: int
-    initialization: InitializationStrategy
     trace: tuple[TraceEntry, ...] = field(default_factory=tuple)

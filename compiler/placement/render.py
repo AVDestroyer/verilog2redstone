@@ -74,7 +74,8 @@ def render_placement_svg(
             f'<text x="{panel_gap}" y="84" class="summary">'
             f'cost {cost.total:g} · wire {cost.wire:g} · '
             f'routing constraint {cost.routing_constraint:g} · '
-            f'overlap {cost.overlap:g} · overflow {cost.overflow:g}</text>'
+            f'overlap {cost.overlap:g} · overflow {cost.overflow:g} · '
+            f'Z-span penalty {cost.z_span:g}</text>'
         )
 
     for panel_index, projection in enumerate(projections):
@@ -165,8 +166,12 @@ def _render_projection(
 
     def project(position: Vec3) -> tuple[float, float]:
         return (
-            plot_left + position[horizontal_axis] * scale,
-            plot_bottom - position[vertical_axis] * scale,
+            plot_left
+            + (position[horizontal_axis] - bounds.origin[horizontal_axis])
+            * scale,
+            plot_bottom
+            - (position[vertical_axis] - bounds.origin[vertical_axis])
+            * scale,
         )
 
     lines = [
@@ -221,9 +226,13 @@ def _render_projection(
     }
     for cell in placement.cells.values():
         dimensions = cell.physical_cell.schematic.dimensions
-        x = plot_left + cell.origin[horizontal_axis] * scale
+        x = plot_left + (
+            cell.origin[horizontal_axis] - bounds.origin[horizontal_axis]
+        ) * scale
         y = plot_bottom - (
-            cell.origin[vertical_axis] + dimensions[vertical_axis]
+            cell.origin[vertical_axis]
+            - bounds.origin[vertical_axis]
+            + dimensions[vertical_axis]
         ) * scale
         width = dimensions[horizontal_axis] * scale
         height = dimensions[vertical_axis] * scale

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Export the latest final topological adder4 placement to Litematica."""
+"""Export the latest adder4 placement to Litematica."""
 
 from __future__ import annotations
 
@@ -13,7 +13,6 @@ sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from compiler.cell_library import load_cell_library  # noqa: E402
 from compiler.placement import (  # noqa: E402
-    BoundingBox,
     PlacedCell,
     Placement,
     save_placement_litematic,
@@ -21,10 +20,7 @@ from compiler.placement import (  # noqa: E402
 
 
 PLACEMENT_PATH = (
-    REPOSITORY_ROOT
-    / "examples"
-    / "build"
-    / "adder4.topological.placement.json"
+    REPOSITORY_ROOT / "examples" / "build" / "adder4.placement.json"
 )
 OUTPUT_PATH = PLACEMENT_PATH.with_suffix(".litematic")
 
@@ -43,12 +39,10 @@ def main() -> int:
             for graph_cell, cell_data in data["cells"].items()
         }
     )
-    bounds = BoundingBox(size=tuple(data["bounding_box"]["size"]))
     save_placement_litematic(
         placement,
-        bounds,
         OUTPUT_PATH,
-        name="adder4 topological placement",
+        name="adder4 placement",
         description=(
             "Final simulated-annealing placement of adder4 logic cells; "
             "routing not included."

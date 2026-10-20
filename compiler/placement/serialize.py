@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from .model import BoundingBox, CostBreakdown, Placement, PlacementResult
+from .model import CostBreakdown, Placement, PlacementResult
 
 
 def placement_result_to_dict(
     module_name: str,
-    bounds: BoundingBox,
     result: PlacementResult,
 ) -> dict[str, object]:
     """Convert a placement result, including its trace, to JSON-safe data."""
@@ -20,9 +19,11 @@ def placement_result_to_dict(
     }
     return {
         "module": module_name,
-        "bounding_box": {"origin": [0, 0, 0], "size": list(bounds.size)},
+        "bounding_box": {
+            "origin": list(result.bounding_box.origin),
+            "size": list(result.bounding_box.size),
+        },
         "seed": result.seed,
-        "initialization": result.initialization,
         "iterations": result.iterations,
         "accepted_moves": result.accepted_moves,
         "initial_cost": _cost_as_dict(result.initial_cost),
@@ -78,4 +79,5 @@ def _cost_as_dict(cost: CostBreakdown) -> dict[str, float]:
         "routing_constraint": cost.routing_constraint,
         "overlap": cost.overlap,
         "overflow": cost.overflow,
+        "z_span": cost.z_span,
     }

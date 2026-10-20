@@ -68,7 +68,7 @@ def main() -> int:
     BUILD_DIRECTORY.mkdir(parents=True, exist_ok=True)
     PLACEMENT_JSON_PATH.write_text(
         json.dumps(
-            placement_result_to_dict(graph.name, bounds, result), indent=2
+            placement_result_to_dict(graph.name, result), indent=2
         )
         + "\n",
         encoding="utf-8",
@@ -77,7 +77,7 @@ def main() -> int:
         render_placement_svg(
             graph,
             result.placement,
-            bounds,
+            result.bounding_box,
             cost=result.cost,
             title="mux2 simulated-annealing placement",
         ),

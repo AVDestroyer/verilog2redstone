@@ -11,7 +11,7 @@ from typing import Protocol
 from compiler.cell_library import CellLibrary, PhysicalCell
 from compiler.graph import CombCell, ModuleGraph
 
-from .cost import placement_cost, placement_has_backward_x_edge
+from .cost import placement_cost
 from .model import (
     AnnealingConfig,
     BoundingBox,
@@ -20,6 +20,7 @@ from .model import (
     Placement,
     PlacementResult,
     TraceEntry,
+    placement_bounding_box,
 )
 
 
@@ -32,6 +33,7 @@ class CostFunction(Protocol):
         placement: Placement,
         bounds: BoundingBox,
         invalid_penalty: float,
+        z_span_weight_per_cell: float,
     ) -> CostBreakdown: ...
 
 
@@ -43,12 +45,7 @@ def place(
     *,
     cost_function: CostFunction | None = None,
 ) -> PlacementResult:
-    """Assign and place every combinational graph cell using annealing.
-
-    The returned placement is the best state observed, rather than merely the
-    final state in the Markov chain. Sequential cells are intentionally not
-    supported by this first placer.
-    """
+    """Assign and place every combinational graph cell using annealing."""
 
     if graph.state_cells:
         raise ValueError("placement of state cells is not implemented")
@@ -65,14 +62,15 @@ def place(
 
     assignments = _assign_physical_cells(graph, library)
     _validate_cells_fit(assignments, bounds)
-    current = _topological_initial_placement(graph, assignments)
-    if placement_has_backward_x_edge(graph, current):
-        raise ValueError(
-            f"{config.initialization} initializer produced an illegal "
-            "backward x edge"
-        )
+    current = _initial_placement(graph, assignments)
     initial_placement = current
-    current_cost = evaluator(graph, current, bounds, config.invalid_penalty)
+    current_cost = evaluator(
+        graph,
+        current,
+        bounds,
+        config.invalid_penalty,
+        config.z_span_weight_per_cell,
+    )
     initial_cost = current_cost
     best = current
     best_cost = current_cost
@@ -98,16 +96,17 @@ def place(
         candidate, move = _candidate_move(
             current, bounds, temperature, config, move_rng
         )
-        if placement_has_backward_x_edge(graph, candidate):
-            accepted = False
-        else:
-            candidate_cost = evaluator(
-                graph, candidate, bounds, config.invalid_penalty
-            )
-            cost_change = candidate_cost.total - current_cost.total
-            accepted = cost_change <= 0 or acceptance_rng.random() < math.exp(
-                -cost_change / temperature
-            )
+        candidate_cost = evaluator(
+            graph,
+            candidate,
+            bounds,
+            config.invalid_penalty,
+            config.z_span_weight_per_cell,
+        )
+        cost_change = candidate_cost.total - current_cost.total
+        accepted = cost_change <= 0 or acceptance_rng.random() < math.exp(
+            -cost_change / temperature
+        )
 
         if accepted:
             current = candidate
@@ -117,12 +116,8 @@ def place(
                 best = current
                 best_cost = current_cost
 
-        if (
-            config.trace_interval is not None
-            and (
-                iteration % config.trace_interval == 0
-                or iteration == iterations
-            )
+        if config.trace_interval is not None and (
+            iteration % config.trace_interval == 0 or iteration == iterations
         ):
             trace.append(
                 TraceEntry(
@@ -135,16 +130,39 @@ def place(
                 )
             )
 
+    best = _move_to_origin(best)
+    best_cost = evaluator(
+        graph,
+        best,
+        bounds,
+        config.invalid_penalty,
+        config.z_span_weight_per_cell,
+    )
     return PlacementResult(
         placement=best,
+        bounding_box=placement_bounding_box(best),
         initial_placement=initial_placement,
         cost=best_cost,
         initial_cost=initial_cost,
         iterations=iterations,
         accepted_moves=accepted_moves,
         seed=seed,
-        initialization=config.initialization,
         trace=tuple(trace),
+    )
+
+
+def _move_to_origin(placement: Placement) -> Placement:
+    minimum = tuple(
+        min(cell.origin[axis] for cell in placement.cells.values()) for axis in range(3)
+    )
+    return Placement(
+        cells={
+            name: replace(
+                cell,
+                origin=tuple(cell.origin[axis] - minimum[axis] for axis in range(3)),
+            )
+            for name, cell in placement.cells.items()
+        }
     )
 
 
@@ -186,17 +204,14 @@ def _validate_cells_fit(
 ) -> None:
     for physical_cell in assignments.values():
         dimensions = physical_cell.schematic.dimensions
-        if any(
-            dimension > limit
-            for dimension, limit in zip(dimensions, bounds.size)
-        ):
+        if any(dimension > limit for dimension, limit in zip(dimensions, bounds.size)):
             raise ValueError(
                 f"physical cell {physical_cell.cell_id!r} with dimensions "
                 f"{dimensions!r} does not fit in bounding box {bounds.size!r}"
             )
 
 
-def _topological_initial_placement(
+def _initial_placement(
     graph: ModuleGraph,
     assignments: dict[str, PhysicalCell],
 ) -> Placement:
@@ -230,7 +245,7 @@ def _topological_initial_placement(
         )
         current_row.add(graph_cell)
         row_width = max(row_width, dimensions[0])
-        row_z += dimensions[2] + 10
+        row_z += dimensions[2] + 5
 
     return Placement(cells=cells)
 
@@ -255,8 +270,7 @@ def _stable_cell_topological_order(
             successors[source].append(destination)
 
     indegree = {
-        name: len(cell_predecessors)
-        for name, cell_predecessors in predecessors.items()
+        name: len(cell_predecessors) for name, cell_predecessors in predecessors.items()
     }
     ready = deque(name for name in assignments if indegree[name] == 0)
     order: list[str] = []
@@ -273,15 +287,14 @@ def _stable_cell_topological_order(
     return order, predecessors
 
 
-def _temperature(
-    config: AnnealingConfig, iteration: int, iterations: int
-) -> float:
+def _temperature(config: AnnealingConfig, iteration: int, iterations: int) -> float:
     if iterations <= 1:
         return config.final_temperature
     progress = (iteration - 1) / (iterations - 1)
-    return config.initial_temperature * (
-        config.final_temperature / config.initial_temperature
-    ) ** progress
+    return (
+        config.initial_temperature
+        * (config.final_temperature / config.initial_temperature) ** progress
+    )
 
 
 def _candidate_move(
@@ -308,9 +321,7 @@ def _candidate_move(
     if swap:
         return _swap_cells(placement, cell_names, rng), "swap"
     return (
-        _displace_cell(
-            placement, cell_names, bounds, temperature, config, rng
-        ),
+        _displace_cell(placement, cell_names, bounds, temperature, config, rng),
         "displace",
     )
 
@@ -344,16 +355,14 @@ def _displace_cell(
     if config.initial_temperature == config.final_temperature:
         temperature_fraction = 0.0
     else:
-        temperature_fraction = (
-            temperature - config.final_temperature
-        ) / (config.initial_temperature - config.final_temperature)
+        temperature_fraction = (temperature - config.final_temperature) / (
+            config.initial_temperature - config.final_temperature
+        )
     temperature_fraction = min(1.0, max(0.0, temperature_fraction))
     maximum = max(
         1,
         math.ceil(
-            bounds.size[axis]
-            * config.max_displacement_fraction
-            * temperature_fraction
+            bounds.size[axis] * config.max_displacement_fraction * temperature_fraction
         ),
     )
     displacement = rng.randint(1, maximum) * rng.choice((-1, 1))

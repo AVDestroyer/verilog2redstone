@@ -6,12 +6,11 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-from .model import BoundingBox, Placement, Vec3
+from .model import Placement, Vec3, placement_bounding_box
 
 
 def save_placement_litematic(
     placement: Placement,
-    bounds: BoundingBox,
     path: str | Path,
     *,
     name: str = "verilog2redstone placement",
@@ -35,6 +34,7 @@ def save_placement_litematic(
 
     if not placement.cells:
         raise ValueError("cannot export an empty placement")
+    bounds = placement_bounding_box(placement)
 
     loaded: dict[Path, Any] = {}
     sources: dict[str, tuple[Any, Any]] = {}
@@ -82,11 +82,6 @@ def save_placement_litematic(
 
     for graph_cell, placed_cell in placement.cells.items():
         physical_cell = placed_cell.physical_cell
-        _validate_inside_bounds(
-            placed_cell.origin,
-            physical_cell.schematic.dimensions,
-            bounds,
-        )
         _, source_region = sources[graph_cell]
         source_region_position = (
             source_region.x,
@@ -108,7 +103,9 @@ def save_placement_litematic(
                 continue
 
             canonical_position = tuple(
-                placed_cell.origin[index] + local_position[index]
+                placed_cell.origin[index]
+                - bounds.origin[index]
+                + local_position[index]
                 for index in range(3)
             )
             destination = _canonical_to_litematic(canonical_position)
@@ -121,7 +118,12 @@ def save_placement_litematic(
             output_region[destination] = block
 
         source_origin = physical_cell.cell_to_schematic((0, 0, 0))
-        destination_origin = _canonical_to_litematic(placed_cell.origin)
+        destination_origin = _canonical_to_litematic(
+            tuple(
+                placed_cell.origin[index] - bounds.origin[index]
+                for index in range(3)
+            )
+        )
         translation = tuple(
             destination_origin[index] - source_origin[index]
             for index in range(3)
@@ -165,20 +167,3 @@ def _translate(position, translation):
     return tuple(
         position[index] + translation[index] for index in range(3)
     )
-
-
-def _validate_inside_bounds(
-    origin: Vec3,
-    dimensions: Vec3,
-    bounds: BoundingBox,
-) -> None:
-    if any(
-        coordinate < 0 or coordinate + dimension > limit
-        for coordinate, dimension, limit in zip(
-            origin, dimensions, bounds.size
-        )
-    ):
-        raise ValueError(
-            f"cell at {origin!r} with dimensions {dimensions!r} "
-            f"overflows bounding box {bounds.size!r}"
-        )
