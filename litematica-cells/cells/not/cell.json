@@ -2,10 +2,11 @@
   "id": "not_v1",
   "logical_type": "$_NOT_",
   "kind": "combinational",
+  "output_signal_strength": 8,
   "schematic": {
     "file": "cell.litematic",
     "region": "NOT",
-    "dimensions": [5, 4, 4]
+    "dimensions": [4, 4, 4]
   },
   "orientation": {
     "allowed_y_rotations": [0],
@@ -20,7 +21,7 @@
     {
       "name": "Y",
       "direction": "output",
-      "position": [4, 1, 0]
+      "position": [3, 2, 0]
     }
   ]
 }

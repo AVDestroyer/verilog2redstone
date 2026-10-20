@@ -2,10 +2,11 @@
   "id": "nand_v1",
   "logical_type": "$_NAND_",
   "kind": "combinational",
+  "output_signal_strength": 5,
   "schematic": {
     "file": "cell.litematic",
     "region": "NAND",
-    "dimensions": [13, 8, 5]
+    "dimensions": [9, 8, 5]
   },
   "orientation": {
     "allowed_y_rotations": [0],
@@ -25,7 +26,7 @@
     {
       "name": "Y",
       "direction": "output",
-      "position": [12, 1, 1]
+      "position": [8, 5, 1]
     }
   ]
 }
