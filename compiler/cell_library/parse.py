@@ -57,6 +57,11 @@ def _load_cell(
             name=pin["name"],
             direction=pin["direction"],
             position=_vec3(pin["position"]),
+            signal_strength_required=(
+                pin["signal_strength_required"]
+                if pin["direction"] == "input"
+                else None
+            ),
         )
         for pin in data["pins"]
     )

@@ -28,7 +28,10 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"cell library schema v{library.schema_version}")
     for cell in library.cells:
-        inputs = ", ".join(f"{pin.name}@{pin.position}" for pin in cell.inputs)
+        inputs = ", ".join(
+            f"{pin.name}@{pin.position}/required={pin.signal_strength_required}"
+            for pin in cell.inputs
+        )
         outputs = ", ".join(f"{pin.name}@{pin.position}" for pin in cell.outputs)
         label = cell.logical_type or cell.cell_id
         routing = ""

@@ -17,6 +17,7 @@ class Pin:
     name: str
     direction: PinDirection
     position: Vec3
+    signal_strength_required: Optional[int] = None
 
 
 @dataclass(frozen=True)
