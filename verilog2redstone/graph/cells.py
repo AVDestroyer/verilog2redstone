@@ -1,5 +1,3 @@
-"""Yosys cells accepted by the Minecraft target graph IR."""
-
 from __future__ import annotations
 
 from enum import Enum, auto
@@ -22,9 +20,7 @@ COMB_CELLS: FrozenSet[str] = frozenset(
 LOGICAL_REGISTER = "REGISTER"
 REGISTER_YOSYS_TYPE = "$_DFF_P_"
 
-# A logical REGISTER captures D on the positive edge of C and exposes the
-# stored value on Q. Reset and enable behavior must be lowered into the D path
-# before the graph is parsed.
+
 STATE_CELLS: dict[str, dict[str, str]] = {
     REGISTER_YOSYS_TYPE: {
         "data_in": "D",

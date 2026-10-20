@@ -20,7 +20,8 @@
     {
       "name": "A",
       "direction": "input",
-      "position": [0, 1, 1]
+      "position": [0, 1, 1],
+      "signal_strength_required": 2
     },
     {
       "name": "Y",

@@ -1,5 +1,3 @@
-"""Sequential-aware netlist graph IR and Yosys JSON parsing."""
-
 from .ir import (
     CombCell,
     CombCycleError,

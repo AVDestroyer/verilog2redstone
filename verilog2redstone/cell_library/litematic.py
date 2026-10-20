@@ -1,5 +1,3 @@
-"""Small, dependency-free reader for the Litematica header data we need."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

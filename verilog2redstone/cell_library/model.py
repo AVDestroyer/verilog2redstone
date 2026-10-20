@@ -1,5 +1,3 @@
-"""Typed physical-cell metadata used after logical technology mapping."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -17,6 +15,7 @@ class Pin:
     name: str
     direction: PinDirection
     position: Vec3
+    signal_strength_required: Optional[int] = None
 
 
 @dataclass(frozen=True)
