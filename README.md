@@ -1,23 +1,54 @@
 # verilog2redstone
 
-Compile a subset of Verilog into Minecraft redstone circuits, with real support for synchronous / sequential RTL.
+Compile a subset of Verilog into Minecraft redstone circuits, with support for
+synchronous / sequential RTL. Currently we only support
+**Minecraft 1.16.5**.
 
-Inspired by [itsfrank/MinecraftHDL](https://github.com/itsfrank/MinecraftHDL), but not a fork. MinecraftHDL’s pipeline works for combinational logic, but does not implement sequential logic. This project aims to fix that. This project also uses 0-tick combinational logic using an update suppression "bug" in Minecraft 1.18, allowing for less delays when placement/routing.
+Inspired by [itsfrank/MinecraftHDL](https://github.com/itsfrank/MinecraftHDL).
+MinecraftHDL’s pipeline works for combinational logic, but does not implement
+sequential logic. This project aims to fix that. This project also uses 0-tick
+combinational logic using an update suppression "bug" in Minecraft 1.16.5,
+allowing for less delays when placement/routing.
 
 ## Status
 
 Done so far:
 
-1. **Yosys frontend script** — Compiles RTL into a netlist that only contains cells from our library.
-2. **Sequential-aware graph IR** — parses primary I/O, combinational cells, positive-edge logical `REGISTER` cells, **data edges**, and clock **control edges**.
-3. **Cell Library**
-4. **Examples + tests**
+1. Frontend (using Yosys): Compiles RTL into a netlist that only contains cells
+   from our library.
+2. Graph IR: parses inputs and outputs, combinational logic, registers, and
+   creates data/control edges.
+3. Cell Library: a few 0-tick cells in Minecraft. More coming later.
+4. Basic Placement algorithm using simulated annealing.
 
 ## Requirements
 
 - [Yosys](https://yosyshq.net/yosys/) (tested with 0.33)
 - Python 3.10+ (stdlib only for the graph frontend)
-- [Litemapy](https://pypi.org/project/litemapy/) (placement export only)
+- [Litemapy](https://pypi.org/project/litemapy/) (to explore Litematica designs)
+
+Install Yosys on Ubuntu or Debian:
+
+```bash
+sudo apt update
+sudo apt install yosys
+```
+
+Install Yosys on macOS with Homebrew:
+
+```bash
+brew install yosys
+```
+
+On Windows, use WSL and follow the Ubuntu instructions. See the
+[official Yosys installation guide](https://yosyshq.readthedocs.io/projects/yosys/en/stable/getting_started/installation.html)
+for source builds and other platforms.
+
+Install the Python dependencies:
+
+```bash
+python3 -m pip install -r requirements.txt
+```
 
 ## Quick start
 
@@ -25,46 +56,43 @@ Done so far:
 # Verilog → Yosys JSON (writes examples/build/<name>.json)
 ./scripts/synth.sh examples/minimal_toggle.v minimal_toggle
 
-# Yosys JSON → sequential-aware graph summary
+# Yosys JSON → graph summary
 python3 -m compiler.graph examples/build/minimal_toggle.json
 
-# Fail on combinational loops (default)
-python3 -m compiler.graph examples/build/comb_loop.json
-
-# Optional: dump the graph as JSON
+# Dump the graph as JSON
 python3 -m compiler.graph examples/build/minimal_toggle.json \
   --json-out examples/build/minimal_toggle.graph.json
 
-# Run tests (synth + parse assertions; requires yosys)
+# Run the placement example
+python3 scripts/place_adder4.py
+
+# Run tests (requires yosys)
 python3 -m unittest discover -s tests -v
 ```
 
-### Synth script
-
-```bash
-./scripts/synth.sh <verilog_file> [top_module] [output_json]
-```
-
-Defaults to `examples/build/<verilog_basename>.json`. The Yosys template is [`scripts/to_json.ys`](scripts/to_json.ys).
-
 ## Graph model
 
-The frontend builds a sequential-aware graph:
+The frontend builds a sequential-aware graph, with the following elements:
 
-| Concept             | Role                                                       |
-| ------------------- | ---------------------------------------------------------- |
-| Combinational cells | `NAND`, `NOT`, and `OR`                                    |
-| State cells         | Positive-edge logical `REGISTER` (`$_DFF_P_`)              |
-| Data edges          | Value flow for placement layering (`Q → NOT → D`, outputs) |
-| Control edges       | Clock attachment to registers (not used for topo sort)     |
+- Combinational cells
+- Registers
+- Data edges between source and destination ports
+- Control edges: clocks
 
-State cells are split at the register boundary for DAG analysis: `Q` is a source into combinational logic, `D` is a sink from it.
+Each data edge represents signal flow from an output port to an input port.
+Examples include a primary input driving a gate, one gate driving another,
+a register's `Q` output driving combinational logic, or combinational logic
+driving a register's `D` input.
 
-**Combinational loops are disallowed.** Parsing rejects them by default (`CombCycleError`).
+State cells are split at the register boundary for DAG analysis: `Q` is a
+source into combinational logic, `D` is a sink from it.
+
+**Combinational loops are disallowed.** Parsing rejects them by default
+(`CombCycleError`).
 
 ## Supported Yosys cells
 
-For our first version, we only support the following gates/cells
+Currently, we only support the following gates/cells:
 
 - NAND
 - NOT
@@ -75,15 +103,19 @@ More gates are coming in the future.
 
 ## Placement API
 
-The initial fixed-orientation placer supports purely combinational graphs. It
+We currently support only placing combinational circuits. The placer
 assigns graph cells to physical library cells and uses simulated annealing to
-search within a caller-supplied bounding box. A destination input behind its
-source output in X contributes a routing-constraint penalty:
+try to optimize the design according to a few cost objectives.
 
 ```python
 from compiler.cell_library import load_cell_library
 from compiler.graph import parse_yosys_json_file
-from compiler.placement import AnnealingConfig, BoundingBox, place
+from compiler.placement import (
+    AnnealingConfig,
+    BoundingBox,
+    place,
+    save_placement_litematic,
+)
 
 graph = parse_yosys_json_file("examples/build/adder4.json")
 library = load_cell_library("litematica-cells")
@@ -97,40 +129,12 @@ result = place(
 print(result.cost)
 for cell in result.placement.cells.values():
     print(cell.graph_cell, cell.physical_cell.cell_id, cell.origin)
+
+save_placement_litematic(
+    result.placement,
+    "examples/build/adder4.placement.litematic",
+)
 ```
 
-Primary I/O and constant endpoints are ignored until they have physical
-placements. The optional trace records sampled current and best costs for
-inspection or plotting. `AnnealingConfig.z_span_weight_per_cell` controls the
-occupied Z-depth penalty per cell and defaults to `1.0`.
-
-To run a reproducible placement smoke test and generate an SVG with top, side,
-and front views:
-
-```bash
-python3 scripts/place_mux2.py
-```
-
-The script writes `mux2.placement.svg` and `mux2.placement.json` under
-`examples/build/`.
-
-The larger combinational `adder4` example uses 30 physical cells and can be
-run in the same way:
-
-```bash
-python3 scripts/place_adder4.py
-```
-
-The script also writes `adder4.placement.html`, which displays the placement
-and its final cost breakdown.
-
-To combine the latest placement into one Litematica schematic containing all
-gate blocks and block entities:
-
-```bash
-python3 -m pip install -r requirements.txt
-python3 scripts/export_adder4_litematic.py
-```
-
-The exporter writes `adder4.placement.litematic` under
-`examples/build/`. Routing is not included yet.
+`save_placement_litematic` writes the placed cells to a Litematica schematic.
+Routing is not included yet.
