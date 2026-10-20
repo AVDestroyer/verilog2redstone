@@ -77,7 +77,9 @@ More gates are coming in the future.
 
 The initial fixed-orientation placer supports purely combinational graphs. It
 assigns graph cells to physical library cells and uses simulated annealing to
-search within a caller-supplied bounding box:
+search within a caller-supplied bounding box. Initialization follows the
+combinational graph's topological order. Moves that put a destination input
+behind its source output in X are rejected as illegal:
 
 ```python
 from compiler.cell_library import load_cell_library
@@ -119,8 +121,7 @@ run in the same way:
 python3 scripts/place_adder4.py
 ```
 
-To compare random initialization against topological row initialization under
-the same annealing schedule and seed:
+To generate a detailed report for the topological placement:
 
 ```bash
 python3 scripts/compare_adder4_initializers.py

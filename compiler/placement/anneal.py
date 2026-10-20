@@ -11,7 +11,7 @@ from typing import Protocol
 from compiler.cell_library import CellLibrary, PhysicalCell
 from compiler.graph import CombCell, ModuleGraph
 
-from .cost import placement_cost
+from .cost import placement_cost, placement_has_backward_x_edge
 from .model import (
     AnnealingConfig,
     BoundingBox,
@@ -60,17 +60,16 @@ def place(
         if config.seed is not None
         else random.SystemRandom().randrange(0, 2**63)
     )
-    initialization_rng = random.Random(seed ^ 0x9E3779B97F4A7C15)
     move_rng = random.Random(seed)
     acceptance_rng = random.Random(seed ^ 0xD1B54A32D192ED03)
 
     assignments = _assign_physical_cells(graph, library)
     _validate_cells_fit(assignments, bounds)
-    if config.initialization == "topological":
-        current = _topological_initial_placement(graph, assignments)
-    else:
-        current = _random_initial_placement(
-            assignments, bounds, initialization_rng
+    current = _topological_initial_placement(graph, assignments)
+    if placement_has_backward_x_edge(graph, current):
+        raise ValueError(
+            f"{config.initialization} initializer produced an illegal "
+            "backward x edge"
         )
     initial_placement = current
     current_cost = evaluator(graph, current, bounds, config.invalid_penalty)
@@ -99,13 +98,16 @@ def place(
         candidate, move = _candidate_move(
             current, bounds, temperature, config, move_rng
         )
-        candidate_cost = evaluator(
-            graph, candidate, bounds, config.invalid_penalty
-        )
-        cost_change = candidate_cost.total - current_cost.total
-        accepted = cost_change <= 0 or acceptance_rng.random() < math.exp(
-            -cost_change / temperature
-        )
+        if placement_has_backward_x_edge(graph, candidate):
+            accepted = False
+        else:
+            candidate_cost = evaluator(
+                graph, candidate, bounds, config.invalid_penalty
+            )
+            cost_change = candidate_cost.total - current_cost.total
+            accepted = cost_change <= 0 or acceptance_rng.random() < math.exp(
+                -cost_change / temperature
+            )
 
         if accepted:
             current = candidate
@@ -192,26 +194,6 @@ def _validate_cells_fit(
                 f"physical cell {physical_cell.cell_id!r} with dimensions "
                 f"{dimensions!r} does not fit in bounding box {bounds.size!r}"
             )
-
-
-def _random_initial_placement(
-    assignments: dict[str, PhysicalCell],
-    bounds: BoundingBox,
-    rng: random.Random,
-) -> Placement:
-    cells: dict[str, PlacedCell] = {}
-    for graph_cell, physical_cell in assignments.items():
-        dimensions = physical_cell.schematic.dimensions
-        origin = tuple(
-            rng.randrange(limit - dimension + 1)
-            for dimension, limit in zip(dimensions, bounds.size)
-        )
-        cells[graph_cell] = PlacedCell(
-            graph_cell=graph_cell,
-            physical_cell=physical_cell,
-            origin=origin,  # type: ignore[arg-type]
-        )
-    return Placement(cells=cells)
 
 
 def _topological_initial_placement(

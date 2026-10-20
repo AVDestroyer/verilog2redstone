@@ -11,10 +11,28 @@ def directed_port_distance(source: Vec3, destination: Vec3) -> int:
     """Directional Manhattan distance used by the initial routing model."""
 
     dx = destination[0] - source[0]
+    if dx < 0:
+        raise ValueError("backward x edges are illegal")
     dy = destination[1] - source[1]
     dz = destination[2] - source[2]
-    x_cost = dx if dx >= 0 else 10 * abs(dx) + 2
-    return x_cost + abs(dy) + 10 * abs(dz) + 2
+    return dx + abs(dy) + 10 * abs(dz) + 2
+
+
+def placement_has_backward_x_edge(
+    graph: ModuleGraph, placement: Placement
+) -> bool:
+    """Return whether a placed cell-to-cell edge travels in negative X."""
+
+    for edge in graph.data_edges:
+        source_cell = placement.cells.get(edge.src.node)
+        destination_cell = placement.cells.get(edge.dst.node)
+        if source_cell is None or destination_cell is None:
+            continue
+        source = _pin_position(source_cell, edge.src.port)
+        destination = _pin_position(destination_cell, edge.dst.port)
+        if destination[0] < source[0]:
+            return True
+    return False
 
 
 def placement_cost(
@@ -39,16 +57,13 @@ def placement_cost(
         source = _pin_position(source_cell, edge.src.port)
         destination = _pin_position(destination_cell, edge.dst.port)
         wire += directed_port_distance(source, destination)
-        signed_dx = destination[0] - source[0]
-        signed_dz = destination[2] - source[2]
-        dx = abs(signed_dx)
+        dx = destination[0] - source[0]
         dy = abs(destination[1] - source[1])
-        dz = abs(signed_dz)
+        dz = abs(destination[2] - source[2])
         if (
             dx < dy
             or (dz > 0 and dx < 5)
             or 0 < dz <= 8
-            or (signed_dx < 0 and signed_dz <= 10)
         ):
             routing_constraint_count += 1
 

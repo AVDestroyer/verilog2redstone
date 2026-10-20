@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A/B test random and topological initialization on adder4."""
+"""Run and report topological initialization on adder4."""
 
 from __future__ import annotations
 
@@ -29,9 +29,9 @@ from compiler.placement import (  # noqa: E402
 
 BUILD_DIRECTORY = REPOSITORY_ROOT / "examples" / "build"
 NETLIST_PATH = BUILD_DIRECTORY / "adder4.json"
-COMPARISON_PATH = BUILD_DIRECTORY / "adder4.initializer-comparison.html"
+REPORT_PATH = BUILD_DIRECTORY / "adder4.initializer-comparison.html"
 SUMMARY_PATH = BUILD_DIRECTORY / "adder4.initializer-comparison.json"
-STRATEGIES: tuple[InitializationStrategy, ...] = ("random", "topological")
+STRATEGIES: tuple[InitializationStrategy, ...] = ("topological",)
 
 
 def main() -> int:
@@ -93,8 +93,8 @@ def main() -> int:
         + "\n",
         encoding="utf-8",
     )
-    COMPARISON_PATH.write_text(
-        _comparison_html(results, elapsed_seconds), encoding="utf-8"
+    REPORT_PATH.write_text(
+        _report_html(results, elapsed_seconds), encoding="utf-8"
     )
 
     for strategy in STRATEGIES:
@@ -104,7 +104,7 @@ def main() -> int:
             f"final={result.cost.total:g} "
             f"elapsed={elapsed_seconds[strategy]:.2f}s"
         )
-    print(f"Comparison: {COMPARISON_PATH}")
+    print(f"Report:     {REPORT_PATH}")
     print(f"Summary:    {SUMMARY_PATH}")
 
     illegal = [
@@ -116,7 +116,7 @@ def main() -> int:
     ]
     if illegal:
         raise RuntimeError(
-            "initializer comparison ended with illegal placements: "
+            "placement ended with illegal states: "
             + ", ".join(illegal)
         )
     return 0
@@ -167,7 +167,7 @@ def _cost_as_dict(cost: CostBreakdown) -> dict[str, float]:
     }
 
 
-def _comparison_html(
+def _report_html(
     results: dict[str, PlacementResult],
     elapsed_seconds: dict[str, float],
 ) -> str:
@@ -205,7 +205,7 @@ def _comparison_html(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>adder4 initializer A/B comparison</title>
+<title>adder4 topological placement report</title>
 <style>
 body {{ margin: 2rem; font-family: system-ui, sans-serif; color: #0f172a; background: #f8fafc; }}
 table {{ border-collapse: collapse; width: 100%; background: white; }}
@@ -218,8 +218,8 @@ img {{ width: 100%; background: white; border: 1px solid #cbd5e1; }}
 </style>
 </head>
 <body>
-<h1>adder4 initializer A/B comparison</h1>
-<p>Same 160 × 28 × 120 box, seed, 150,000 iterations, schedule, and move stream.</p>
+<h1>adder4 topological placement report</h1>
+<p>160 × 28 × 120 box, seed 20261011, and 150,000 iterations.</p>
 <table>
 <thead><tr><th rowspan="2">Initializer</th><th colspan="5">Initial</th><th colspan="5">Final</th><th rowspan="2">Accepted</th><th rowspan="2">Runtime</th></tr>
 <tr><th>Total</th><th>Wire</th><th>Routing</th><th>Overlap</th><th>Overflow</th><th>Total</th><th>Wire</th><th>Routing</th><th>Overlap</th><th>Overflow</th></tr></thead>

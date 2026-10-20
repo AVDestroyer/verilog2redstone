@@ -9,7 +9,7 @@ from compiler.cell_library import PhysicalCell
 
 
 Vec3 = tuple[int, int, int]
-InitializationStrategy = Literal["random", "topological"]
+InitializationStrategy = Literal["topological"]
 
 
 @dataclass(frozen=True)
@@ -84,7 +84,7 @@ class AnnealingConfig:
     swap_weight: float = 0.2
     max_displacement_fraction: float = 0.25
     invalid_penalty: float = 100_000.0
-    initialization: InitializationStrategy = "random"
+    initialization: InitializationStrategy = "topological"
     seed: Optional[int] = None
     trace_interval: Optional[int] = None
 
@@ -106,10 +106,8 @@ class AnnealingConfig:
             raise ValueError("max_displacement_fraction must be positive")
         if self.invalid_penalty < 0:
             raise ValueError("invalid_penalty cannot be negative")
-        if self.initialization not in ("random", "topological"):
-            raise ValueError(
-                "initialization must be 'random' or 'topological'"
-            )
+        if self.initialization != "topological":
+            raise ValueError("initialization must be 'topological'")
         if self.trace_interval is not None and self.trace_interval <= 0:
             raise ValueError("trace_interval must be positive when provided")
 

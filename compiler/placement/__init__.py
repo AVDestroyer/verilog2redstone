@@ -1,7 +1,11 @@
 """Simulated annealing placement API."""
 
 from .anneal import CostFunction, place
-from .cost import directed_port_distance, placement_cost
+from .cost import (
+    directed_port_distance,
+    placement_cost,
+    placement_has_backward_x_edge,
+)
 from .litematic import save_placement_litematic
 from .model import (
     AnnealingConfig,
@@ -29,6 +33,7 @@ __all__ = [
     "directed_port_distance",
     "place",
     "placement_cost",
+    "placement_has_backward_x_edge",
     "placement_result_to_dict",
     "render_placement_svg",
     "save_placement_litematic",
