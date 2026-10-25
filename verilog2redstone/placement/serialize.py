@@ -19,6 +19,18 @@ def placement_result_to_dict(
             "origin": list(result.bounding_box.origin),
             "size": list(result.bounding_box.size),
         },
+        "track_pitch": result.placement.track_pitch,
+        "track_origin_z": result.placement.track_origin_z,
+        "tracks": {
+            str(track_id): {
+                "origin_z": track.origin_z,
+                "width": track.width,
+                "used_width": track.used_width,
+                "original_width": track.original_width,
+                "utilization": track.utilization,
+            }
+            for track_id, track in sorted(result.placement.tracks.items())
+        },
         "seed": result.seed,
         "iterations": result.iterations,
         "accepted_moves": result.accepted_moves,
@@ -52,6 +64,9 @@ def _placement_cells_as_dict(
             "cell_id": cell.physical_cell.cell_id,
             "logical_type": cell.physical_cell.logical_type,
             "origin": list(cell.origin),
+            "layer": cell.layer_id,
+            "track": cell.track_id,
+            "z_offset": cell.z_offset,
             "dimensions": list(cell.physical_cell.schematic.dimensions),
             "pins": {
                 pin.name: {
@@ -72,8 +87,9 @@ def _cost_as_dict(cost: CostBreakdown) -> dict[str, float]:
     return {
         "total": cost.total,
         "wire": cost.wire,
+        "cross_track": cost.cross_track,
         "routing_constraint": cost.routing_constraint,
         "overlap": cost.overlap,
         "overflow": cost.overflow,
-        "z_span": cost.z_span,
+        "bounding_box": cost.bounding_box,
     }

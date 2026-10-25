@@ -1,5 +1,5 @@
 from .anneal import CostFunction, place
-from .cost import directed_port_distance, placement_cost
+from .cost import placement_cost
 from .litematic import save_placement_litematic
 from .model import (
     AnnealingConfig,
@@ -8,9 +8,11 @@ from .model import (
     PlacedCell,
     Placement,
     PlacementResult,
+    Track,
     TraceEntry,
     placement_bounding_box,
 )
+from .render import render_placement_svg
 from .serialize import placement_result_to_dict
 
 __all__ = [
@@ -22,10 +24,11 @@ __all__ = [
     "Placement",
     "PlacementResult",
     "TraceEntry",
-    "directed_port_distance",
+    "Track",
     "place",
     "placement_cost",
     "placement_bounding_box",
     "placement_result_to_dict",
+    "render_placement_svg",
     "save_placement_litematic",
 ]

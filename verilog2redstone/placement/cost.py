@@ -5,29 +5,22 @@ from verilog2redstone.graph import ModuleGraph
 from .model import BoundingBox, CostBreakdown, PlacedCell, Placement, Vec3
 
 
-def directed_port_distance(source: Vec3, destination: Vec3) -> int:
-    """Directional Manhattan distance used by the initial routing model."""
-
-    dx = destination[0] - source[0]
-    dy = destination[1] - source[1]
-    dz = destination[2] - source[2]
-    return abs(dx) + abs(dy) + 10 * abs(dz) + 2
-
-
 def placement_cost(
     graph: ModuleGraph,
     placement: Placement,
     bounds: BoundingBox,
     invalid_penalty: float,
-    z_span_weight_per_cell: float = 1.0,
+    bounding_box_weight_per_cell: float = 0.5,
+    cross_track_penalty: float = 100.0,
 ) -> CostBreakdown:
-    """Evaluate wire length, insufficient clearance, and box overflow.
+    """Evaluate wire length, routing legality, overlap, overflow, and size.
 
     Data edges involving primary I/O or constants are ignored because those
     endpoints do not yet have physical placements.
     """
 
     wire = 0.0
+    cross_track_count = 0
     routing_constraint_count = 0
     for edge in graph.data_edges:
         source_cell = placement.cells.get(edge.src.node)
@@ -36,12 +29,15 @@ def placement_cost(
             continue
         source = _pin_position(source_cell, edge.src.port)
         destination = _pin_position(destination_cell, edge.dst.port)
-        wire += directed_port_distance(source, destination)
+        same_track = source_cell.track_id == destination_cell.track_id
         signed_dx = destination[0] - source[0]
         dx = abs(signed_dx)
         dy = abs(destination[1] - source[1])
         dz = abs(destination[2] - source[2])
-        if signed_dx < 0 or dx < dy or (dz > 0 and dx < 5) or 0 < dz <= 8:
+        wire += dx + dy + 2
+        if not same_track:
+            cross_track_count += 1
+        if signed_dx < 0 or dx < dy + 1 or (same_track and dz != 0):
             routing_constraint_count += 1
 
     placed_cells = tuple(placement.cells.values())
@@ -53,21 +49,27 @@ def placement_cost(
             if _violates_clearance(first, second):
                 overlap_count += 1
 
-    z_span = 0
+    bounding_box_cost = 0.0
     if placed_cells:
-        z_minimum = min(cell.origin[2] for cell in placed_cells)
-        z_maximum = max(
-            cell.origin[2] + cell.physical_cell.schematic.dimensions[2]
-            for cell in placed_cells
+        spans = tuple(
+            max(
+                cell.origin[axis] + cell.physical_cell.schematic.dimensions[axis]
+                for cell in placed_cells
+            )
+            - min(cell.origin[axis] for cell in placed_cells)
+            for axis in range(3)
         )
-        z_span = z_maximum - z_minimum
+        bounding_box_cost = (
+            sum(spans) * len(placed_cells) * bounding_box_weight_per_cell
+        )
 
     return CostBreakdown(
         wire=wire,
+        cross_track=cross_track_count * cross_track_penalty,
         routing_constraint=routing_constraint_count * invalid_penalty,
         overlap=overlap_count * invalid_penalty,
         overflow=overflow_count * invalid_penalty,
-        z_span=z_span * len(placed_cells) * z_span_weight_per_cell,
+        bounding_box=bounding_box_cost,
     )
 
 
