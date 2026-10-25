@@ -63,8 +63,11 @@ python3 -m verilog2redstone.graph examples/build/minimal_toggle.json
 python3 -m verilog2redstone.graph examples/build/minimal_toggle.json \
   --json-out examples/build/minimal_toggle.graph.json
 
-# Run the placement example
+# Build the 4-bit adder, writing JSON, SVG/HTML visualization, and Litematica
 python3 scripts/place_adder4.py
+
+# Regenerate SVG and HTML from the existing placement JSON
+python3 scripts/place_adder4.py --visualize-only
 
 # Run tests (requires yosys)
 python3 -m unittest discover -s tests -v
@@ -103,9 +106,14 @@ More gates are coming in the future.
 
 ## Placement API
 
-We currently support only placing combinational circuits. The placer
-assigns graph cells to physical library cells and uses simulated annealing to
-try to optimize the design according to a few cost objectives.
+We currently support only placing combinational circuits. The placer assigns
+graph cells to physical library cells, divides the DAG into topological
+x-layers, and assigns each layer's cells to fixed-pitch z-tracks. Simulated
+annealing preserves that structure: it optimizes per-cell z offsets inside a
+track, track ordering within a layer, y positions, and gaps between x-layers.
+Cells sharing a track are never allowed to overlap in x. After annealing, each
+track is compacted to its occupied z-envelope plus one separator block; the
+final track origins, widths, and utilization are included in placement JSON.
 
 ```python
 from verilog2redstone.cell_library import load_cell_library
