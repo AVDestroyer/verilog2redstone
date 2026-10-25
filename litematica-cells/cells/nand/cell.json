@@ -6,7 +6,7 @@
   "schematic": {
     "file": "cell.litematic",
     "region": "NAND",
-    "dimensions": [9, 8, 5]
+    "dimensions": [9, 8, 6]
   },
   "orientation": {
     "allowed_y_rotations": [0],
@@ -16,19 +16,19 @@
     {
       "name": "A",
       "direction": "input",
-      "position": [0, 2, 1],
+      "position": [0, 2, 2],
       "signal_strength_required": 3
     },
     {
       "name": "B",
       "direction": "input",
-      "position": [5, 5, 1],
+      "position": [0, 5, 1],
       "signal_strength_required": 2
     },
     {
       "name": "Y",
       "direction": "output",
-      "position": [8, 5, 1]
+      "position": [8, 5, 3]
     }
   ]
 }

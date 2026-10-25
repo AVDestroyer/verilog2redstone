@@ -23,7 +23,7 @@ class TestPlacementEndToEnd(unittest.TestCase):
         graph = parse_yosys_json_file(synth("and2.v", "and2"))
         library = load_cell_library(REPO_ROOT / "litematica-cells")
         search_bounds = BoundingBox(size=(30, 12, 12))
-        config = AnnealingConfig(iterations_per_cell=50, seed=7)
+        config = AnnealingConfig(iterations_per_cell=100, seed=7)
 
         result = place(graph, library, search_bounds, config)
 
