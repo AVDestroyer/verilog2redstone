@@ -108,12 +108,9 @@ More gates are coming in the future.
 
 We currently support only placing combinational circuits. The placer assigns
 graph cells to physical library cells, divides the DAG into topological
-x-layers, and assigns each layer's cells to fixed-pitch z-tracks. Simulated
-annealing preserves that structure: it optimizes per-cell z offsets inside a
-track, track ordering within a layer, y positions, and gaps between x-layers.
-Cells sharing a track are never allowed to overlap in x. After annealing, each
-track is compacted to its occupied z-envelope plus one separator block; the
-final track origins, widths, and utilization are included in placement JSON.
+layers, and assigns each layer's cells to "tracks" in the z dimension. We then
+use simulated annealing to optimize the placement while preserving the track
+structure.
 
 ```python
 from verilog2redstone.cell_library import load_cell_library
